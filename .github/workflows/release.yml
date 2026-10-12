@@ -22,6 +22,9 @@ jobs:
           java-version: '21'
           cache: maven
 
+      - name: Make Maven wrapper executable
+        run: chmod +x mvnw
+
       - name: Build jar
         run: ./mvnw -B -DskipTests package
 
