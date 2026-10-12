@@ -15,6 +15,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
+      attestations: write
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -49,6 +50,18 @@ jobs:
             --output-certificate "${JAR}.pem" \
             "${JAR}"
 
+      - name: Generate build provenance (SLSA)
+        id: provenance
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
+        with:
+          subject-path: target/chat-*.jar
+
+      - name: Stage provenance bundle for the release
+        run: |
+          JAR=$(basename "$(ls target/chat-*.jar | head -n1)")
+          cp "${{ steps.provenance.outputs.bundle-path }}" "target/${JAR}.intoto.jsonl"
+          ls -l target/*.intoto.jsonl
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
@@ -57,4 +70,5 @@ jobs:
             target/chat-*.jar
             target/chat-*.jar.sig
             target/chat-*.jar.pem
+            target/chat-*.jar.intoto.jsonl
             target/SHA256SUMS

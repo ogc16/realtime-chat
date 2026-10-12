@@ -17,6 +17,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
+      attestations: write
     steps:
       - name: Download release assets
         env:
@@ -42,8 +43,20 @@ jobs:
           done
           [ "$found" = "1" ] || { echo "no jar assets to sign"; exit 1; }
 
-      - name: Upload signatures
+      - name: Generate build provenance (SLSA)
+        id: provenance
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
+        with:
+          subject-path: dist/*.jar
+
+      - name: Stage provenance bundle for the release
+        run: |
+          JAR=$(basename "$(ls dist/*.jar | head -n1)")
+          cp "${{ steps.provenance.outputs.bundle-path }}" "dist/${JAR}.intoto.jsonl"
+          ls -l dist/*.intoto.jsonl
+
+      - name: Upload signatures and provenance
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.tag }}
-        run: gh release upload "$TAG" dist/*.sig dist/*.pem --repo "$GITHUB_REPOSITORY" --clobber
+        run: gh release upload "$TAG" dist/*.sig dist/*.pem dist/*.intoto.jsonl --repo "$GITHUB_REPOSITORY" --clobber
