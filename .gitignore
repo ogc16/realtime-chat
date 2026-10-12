@@ -7,3 +7,13 @@ target/
 .idea/
 *.iml
 .vscode/
+
+# Python / RAG sidecar
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.mypy_cache/
+.pytest_cache/
+rag-service/db/

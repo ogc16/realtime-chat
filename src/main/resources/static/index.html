@@ -141,6 +141,37 @@
         .form button:hover { background: var(--accent-2); }
         .form button:disabled { opacity: .5; cursor: not-allowed; }
 
+        .input-wrap { position: relative; flex: 1; display: flex; }
+        .input-wrap #messageInput { flex: 1; }
+        .suggestions {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: calc(100% + 8px);
+            list-style: none;
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, .4);
+            z-index: 6;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        .suggestions li {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 9px 14px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .suggestions li .hint { color: var(--muted); font-size: 11px; }
+        .suggestions li.active,
+        .suggestions li:hover { background: var(--accent); color: #fff; }
+        .suggestions li.active .hint,
+        .suggestions li:hover .hint { color: rgba(255, 255, 255, .8); }
+
         .modal-backdrop {
             position: fixed;
             inset: 0;
@@ -214,7 +245,10 @@
         <div class="header" id="roomHeader">Joined room <strong id="roomName">public</strong></div>
         <div id="messages"></div>
         <form class="form" id="messageForm">
-            <input id="messageInput" type="text" placeholder="Type a message…" maxlength="1000" autocomplete="off" disabled>
+            <div class="input-wrap">
+                <input id="messageInput" type="text" placeholder="Type a message… (/ask for the bot)" maxlength="1000" autocomplete="off" disabled>
+                <ul class="suggestions" id="suggestions" hidden></ul>
+            </div>
             <button id="sendBtn" type="submit" disabled>Send</button>
         </form>
     </div>
@@ -228,6 +262,7 @@
     const sendBtn = document.getElementById('sendBtn');
     const connStatus = document.getElementById('connStatus');
     const connText = document.getElementById('connText');
+    const suggestionsEl = document.getElementById('suggestions');
 
     const users = new Set();
     let username = null;
@@ -249,6 +284,79 @@
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
         }[c]));
     }
+
+    // ---- Autocomplete / typeahead ----
+    let suggestions = [];
+    let activeIndex = -1;
+    let debounceTimer = null;
+
+    function lastWord(value) {
+        const m = value.match(/([A-Za-z][A-Za-z0-9']*)$/);
+        return m ? m[1] : '';
+    }
+
+    function hideSuggestions() {
+        suggestions = [];
+        activeIndex = -1;
+        suggestionsEl.hidden = true;
+        suggestionsEl.innerHTML = '';
+    }
+
+    function showSuggestions(list) {
+        suggestions = list;
+        activeIndex = -1;
+        if (!list.length) { hideSuggestions(); return; }
+        suggestionsEl.innerHTML = '';
+        list.forEach((word, i) => {
+            const li = document.createElement('li');
+            li.dataset.index = i;
+            li.innerHTML = '<span>' + escapeHtml(word) + '</span><span class="hint">Tab</span>';
+            li.addEventListener('mousedown', (e) => { e.preventDefault(); applySuggestion(word); });
+            suggestionsEl.appendChild(li);
+        });
+        suggestionsEl.hidden = false;
+    }
+
+    function setActive(index) {
+        if (!suggestions.length) return;
+        activeIndex = (index + suggestions.length) % suggestions.length;
+        [...suggestionsEl.children].forEach((li, i) => li.classList.toggle('active', i === activeIndex));
+    }
+
+    function applySuggestion(word) {
+        const value = input.value;
+        const m = value.match(/([A-Za-z][A-Za-z0-9']*)$/);
+        input.value = (m ? value.slice(0, value.length - m[1].length) : value) + word + ' ';
+        hideSuggestions();
+        input.focus();
+    }
+
+    async function requestSuggestions() {
+        const prefix = lastWord(input.value);
+        if (prefix.length < 1) { hideSuggestions(); return; }
+        try {
+            const res = await fetch('/api/autocomplete?limit=6&q=' + encodeURIComponent(prefix));
+            if (!res.ok) { hideSuggestions(); return; }
+            showSuggestions(await res.json());
+        } catch {
+            hideSuggestions();
+        }
+    }
+
+    input.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(requestSuggestions, 120);
+    });
+
+    input.addEventListener('keydown', (e) => {
+        if (!suggestions.length) return;
+        if (e.key === 'ArrowDown') { e.preventDefault(); setActive(activeIndex + 1); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(activeIndex - 1); }
+        else if (e.key === 'Tab' && activeIndex >= 0) { e.preventDefault(); applySuggestion(suggestions[activeIndex]); }
+        else if (e.key === 'Escape') { hideSuggestions(); }
+    });
+
+    input.addEventListener('blur', () => setTimeout(hideSuggestions, 100));
 
     function addMessage(msg) {
         const type = msg.type || 'CHAT';
@@ -338,6 +446,7 @@
             body: JSON.stringify({ type: 'CHAT', sender: username, content: text, timestamp: Date.now() })
         });
         input.value = '';
+        hideSuggestions();
         input.focus();
     });
 
