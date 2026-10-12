@@ -1,0 +1,49 @@
+name: Sign release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to (re)sign
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  sign:
+    name: Sign existing release artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          mkdir -p dist
+          gh release download "$TAG" --dir dist --clobber
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
+
+      - name: Sign jars
+        run: |
+          found=0
+          for jar in dist/*.jar; do
+            [ -e "$jar" ] || continue
+            found=1
+            cosign sign-blob --yes \
+              --output-signature "${jar}.sig" \
+              --output-certificate "${jar}.pem" \
+              "${jar}"
+          done
+          [ "$found" = "1" ] || { echo "no jar assets to sign"; exit 1; }
+
+      - name: Upload signatures
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: gh release upload "$TAG" dist/*.sig dist/*.pem --clobber
