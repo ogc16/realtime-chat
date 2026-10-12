@@ -6,6 +6,8 @@ A realtime chat application built with **Spring Boot**, **Spring WebSocket (STOM
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.16-green)
 ![WebSocket](https://img.shields.io/badge/WebSocket-STOMP-blue)
 [![CI](https://github.com/ogc16/realtime-chat/actions/workflows/ci.yml/badge.svg)](https://github.com/ogc16/realtime-chat/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/ogc16/realtime-chat/actions/workflows/codeql.yml/badge.svg)](https://github.com/ogc16/realtime-chat/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/ogc16/realtime-chat/badge)](https://securityscorecards.dev/viewer/?uri=github.com/ogc16/realtime-chat)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Features
@@ -165,6 +167,17 @@ curl http://localhost:8080/ws/info   # → {"websocket":true, ...}
 
 See [`docs/UML.md`](docs/UML.md) for component, class, sequence, state, and
 deployment diagrams.
+
+## Security
+
+Please report vulnerabilities privately — see [`SECURITY.md`](SECURITY.md).
+Dependency updates are automated with [Dependabot](.github/dependabot.yml), and
+the project is scanned with [CodeQL](.github/workflows/codeql.yml) and the
+[OpenSSF Scorecard](.github/workflows/scorecard.yml).
+
+## Changelog
+
+See [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Contributing
 

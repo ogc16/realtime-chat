@@ -1,0 +1,9 @@
+# Default owner for everything in the repository.
+# Replace with a team if you add one, e.g. @ogc16/platform-team
+* @ogc16
+
+# RAG sidecar
+/rag-service/ @ogc16
+
+# CI, releases, and repository automation
+/.github/ @ogc16
