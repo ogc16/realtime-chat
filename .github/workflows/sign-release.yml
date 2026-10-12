@@ -24,7 +24,7 @@ jobs:
           TAG: ${{ inputs.tag }}
         run: |
           mkdir -p dist
-          gh release download "$TAG" --dir dist --clobber
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir dist --clobber
 
       - name: Install cosign
         uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
@@ -46,4 +46,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.tag }}
-        run: gh release upload "$TAG" dist/*.sig dist/*.pem --clobber
+        run: gh release upload "$TAG" dist/*.sig dist/*.pem --repo "$GITHUB_REPOSITORY" --clobber
