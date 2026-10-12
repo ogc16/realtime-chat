@@ -53,7 +53,7 @@
             <groupId>com.code-intelligence</groupId>
             <artifactId>jazzer-api</artifactId>
             <version>${jazzer.version}</version>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
