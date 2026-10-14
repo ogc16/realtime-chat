@@ -19,7 +19,7 @@
 
     <properties>
         <java.version>21</java.version>
-        <jazzer.version>0.22.1</jazzer.version>
+        <jazzer.version>0.30.0</jazzer.version>
     </properties>
 
     <distributionManagement>
